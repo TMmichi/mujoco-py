@@ -17,8 +17,6 @@ cdef class MjRenderContext(object):
     cdef mjvOption _vopt
     cdef mjvPerturb _pert
     cdef mjrContext _con
-    # TODO
-    cdef mjvFigure _figure
 
     # Public wrappers
     cdef readonly PyMjvScene scn
@@ -26,8 +24,6 @@ cdef class MjRenderContext(object):
     cdef readonly PyMjvOption vopt
     cdef readonly PyMjvPerturb pert
     cdef readonly PyMjrContext con
-    #TODO
-    cdef readonly PyMjvFigure figure
 
     cdef readonly object opengl_context
     cdef readonly int _visible
@@ -38,14 +34,9 @@ cdef class MjRenderContext(object):
     cdef public object sim
 
     def __cinit__(self):
-        maxgeom = 1000
-        mjv_makeScene(self._model_ptr, &self._scn, maxgeom)
-        mjv_defaultCamera(&self._cam)
-        mjv_defaultPerturb(&self._pert)
-        mjv_defaultOption(&self._vopt)
-        mjr_defaultContext(&self._con)
-        # TODO
-        mjv_defaultFigure(&self._figure)
+        # __cinit__ run before __init__ self._model_ptr not init before call mjv_makeScene
+        # mv all init to line 54
+        pass
 
     def __init__(self, MjSim sim, bint offscreen=True, int device_id=-1, opengl_backend=None, quiet=False):
         self.sim = sim
@@ -60,12 +51,19 @@ cdef class MjRenderContext(object):
 
         self._model_ptr = sim.model.ptr
         self._data_ptr = sim.data.ptr
+        mjv_defaultCamera(&self._cam)
+        mjv_defaultPerturb(&self._pert)
+        mjv_defaultOption(&self._vopt)
+        mjr_defaultContext(&self._con)
+        mjv_defaultScene(&self._scn)
+
+        maxgeom = 1000
+        mjv_makeScene(self._model_ptr, &self._scn, maxgeom)
+
         self.scn = WrapMjvScene(&self._scn)
         self.cam = WrapMjvCamera(&self._cam)
         self.vopt = WrapMjvOption(&self._vopt)
         self.con = WrapMjrContext(&self._con)
-        # TODO
-        self.figure = WrapMjvFigure(&self._figure)
 
         self._pert.active = 0
         self._pert.select = 0
@@ -176,28 +174,6 @@ cdef class MjRenderContext(object):
         mjr_render(rect, &self._scn, &self._con)
         for gridpos, (text1, text2) in self._overlay.items():
             mjr_overlay(const.FONTSCALE_150, gridpos, rect, text1.encode(), text2.encode(), &self._con)
-
-        # TODO
-        cdef mjrRect viewport
-        viewport.left = 0
-        viewport.bottom = 0
-        viewport.width = width/4
-        viewport.height = height/4
-
-        self.figure.figurergba[3] = 0.5
-        self.figure.flg_extend = 1;
-        self.figure.flg_barplot = 1;
-        self.figure.flg_symmetric = 1;
-        self.figure.title = "Sensor data";
-        # grid size
-        self.figure.gridsize[0] = 2;
-        self.figure.gridsize[1] = 3;
-        # minimum range
-        self.figure.range[0][0] = 0;
-        self.figure.range[0][1] = 0;
-        self.figure.range[1][0] = -1;
-        self.figure.range[1][1] = 1;
-        mjr_figure(viewport, &self._figure, &self._con)
 
         if segmentation:
             self._scn.flags[const.RND_SEGMENT] = 0
