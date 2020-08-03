@@ -43,6 +43,7 @@ class MjViewerBasic(cymj.MjRenderContextWindow):
         glfw.set_scroll_callback(self.window, self._scroll_callback)
         glfw.set_key_callback(self.window, self.key_callback)
 
+
     def render(self):
         """
         Render the current simulation state to the screen or off-screen buffer.
@@ -53,7 +54,7 @@ class MjViewerBasic(cymj.MjRenderContextWindow):
         elif glfw.window_should_close(self.window):
             glfw.terminate()
             sys.exit(0)
-
+        
         with self._gui_lock:
             super().render()
 
